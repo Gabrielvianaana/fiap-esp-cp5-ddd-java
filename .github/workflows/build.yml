@@ -1,0 +1,53 @@
+name: Build e verificacao arquitetural
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: ${{ matrix.projeto }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        projeto:
+          - fiap-bank-core-bancario
+          - fiap-bank-plataforma-credito
+          - fiap-bank-mesa-operacoes-credito
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Configurar JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # verify executa compilacao, testes unitarios do dominio e o maven-enforcer-plugin
+      # (regras de fronteira entre camadas DDD). Qualquer violacao falha o build.
+      - name: mvn verify
+        working-directory: ${{ matrix.projeto }}
+        shell: bash
+        run: |
+          set -o pipefail
+          mvn -B -ntp verify 2>&1 | tee build.log
+
+      # Em caso de falha, publica as linhas de erro do Maven como anotacoes do job,
+      # para que fiquem visiveis no resumo do workflow sem precisar abrir o log completo.
+      - name: Publicar erros do Maven
+        if: failure()
+        working-directory: ${{ matrix.projeto }}
+        shell: bash
+        run: |
+          grep -E "\[ERROR\]|Tests run:.*(Failures: [1-9]|Errors: [1-9])|FAILED|Rule [0-9]+:" build.log \
+            | grep -vE "^\[ERROR\] *$|Re-run Maven|For more information|Help 1|full stack trace|switch to enable" \
+            | head -200 > erros.txt || true
+          split -l 20 erros.txt parte_ || true
+          for f in parte_*; do
+            [ -s "$f" ] || continue
+            msg=$(sed 's/%/%25/g' "$f" | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Maven ${{ matrix.projeto }}::${msg}"
+          done
