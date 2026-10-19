@@ -1,9 +1,7 @@
 package br.com.fiap.bank.mesa.controller;
 
 import br.com.fiap.bank.mesa.client.PlataformaCreditoFeignClient;
-import br.com.fiap.bank.mesa.dto.AprovarSolicitacaoRequestDTO;
-import br.com.fiap.bank.mesa.dto.BuscarSolicitacaoRequestDTO;
-import br.com.fiap.bank.mesa.dto.ReprovarSolicitacaoRequestDTO;
+import br.com.fiap.bank.mesa.dto.DecisaoSolicitacaoRequestDTO;
 import br.com.fiap.bank.mesa.dto.SolicitacaoCreditoDTO;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,7 +30,7 @@ public class MesaOperacoesController {
                             @RequestParam(required = false) String error) {
         List<SolicitacaoCreditoDTO> solicitacoes;
         try {
-            solicitacoes = plataformaClient.listarTodasSolicitacoes();
+            solicitacoes = plataformaClient.listarSolicitacoes();
         } catch (Exception e) {
             System.err.println("[MESA DE OPERACOES] Plataforma de Credito indisponivel via Feign Client: " + e.getMessage());
             solicitacoes = new ArrayList<>();
@@ -62,7 +60,7 @@ public class MesaOperacoesController {
     @GetMapping("/solicitacao/{id}")
     public String telaAnaliseSolicitacao(@PathVariable("id") Long id, Model model) {
         try {
-            SolicitacaoCreditoDTO solicitacao = plataformaClient.buscarSolicitacaoPorId(new BuscarSolicitacaoRequestDTO(id));
+            SolicitacaoCreditoDTO solicitacao = plataformaClient.buscarSolicitacao(id);
             model.addAttribute("solicitacao", solicitacao);
 
             // Calculos auxiliares de analise de risco para a tela
@@ -87,7 +85,7 @@ public class MesaOperacoesController {
     public String aprovar(@RequestParam("solicitacaoId") Long solicitacaoId,
                           @RequestParam(value = "parecerOperador", required = false) String parecerOperador) {
         try {
-            plataformaClient.aprovarSolicitacao(new AprovarSolicitacaoRequestDTO(solicitacaoId, parecerOperador));
+            plataformaClient.registrarDecisao(solicitacaoId, DecisaoSolicitacaoRequestDTO.aprovar(parecerOperador));
             return "redirect:/dashboard?success=Solicitacao+" + solicitacaoId + "+APROVADA+com+sucesso!";
         } catch (Exception e) {
             return "redirect:/dashboard?error=Erro+ao+aprovar+solicitacao:+" + e.getMessage();
@@ -98,7 +96,7 @@ public class MesaOperacoesController {
     public String reprovar(@RequestParam("solicitacaoId") Long solicitacaoId,
                            @RequestParam(value = "motivoReprovacao", required = false) String motivoReprovacao) {
         try {
-            plataformaClient.reprovarSolicitacao(new ReprovarSolicitacaoRequestDTO(solicitacaoId, motivoReprovacao));
+            plataformaClient.registrarDecisao(solicitacaoId, DecisaoSolicitacaoRequestDTO.reprovar(motivoReprovacao));
             return "redirect:/dashboard?success=Solicitacao+" + solicitacaoId + "+REPROVADA+com+sucesso!";
         } catch (Exception e) {
             return "redirect:/dashboard?error=Erro+ao+reprovar+solicitacao:+" + e.getMessage();
