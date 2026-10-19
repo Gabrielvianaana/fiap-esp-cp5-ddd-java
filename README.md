@@ -102,3 +102,24 @@ App: `http://localhost:4200`
 - **Mariana Souza** · CPF `55544433399` · restrição ativa no SCR (sem conta no Core)
 
 A Plataforma sobe com 4 propostas: duas aprovadas automaticamente, uma reprovada pelo SCR e uma **em análise**, para a Mesa decidir.
+
+
+## 📮 Collection do Postman
+
+A pasta [postman/](./postman) tem a collection FIAP-Bank-CP5.postman_collection.json, com 36 requisições que cobrem o Core Bancário e a Plataforma de Crédito:
+
+| Pasta | O que testa |
+| :--- | :--- |
+| Core Bancário - Clientes | CRUD de clientes, CPF duplicado (409) e validações (400) |
+| Core Bancário - Contas | Abertura de conta, depósito, saque, saldo insuficiente (409) e encerramento |
+| Plataforma de Crédito - API RESTful | Criação de propostas, decisão da Mesa e cancelamento |
+| Plataforma de Crédito - Contrato legado | Rotas antigas /api/credito/* usadas pelo app Mobile |
+
+### Como usar
+
+1. Suba o *Core Bancário* (porta 8080) e a *Plataforma de Crédito* (porta 8081), conforme a seção "Ordem recomendada de execução".
+2. No Postman, clique em *Import* e selecione o arquivo postman/FIAP-Bank-CP5.postman_collection.json.
+3. Clique nos três pontinhos da collection e depois em *Run collection* → *Run*.
+4. Rode as requisições *na ordem*: algumas salvam variáveis (clienteId, numeroConta, solicitacaoId) que as próximas usam.
+
+Cada requisição tem testes automáticos que conferem o status HTTP esperado (200, 201, 204, 400, 404 ou 409). As URLs base ficam nas variáveis core_url e plataforma_url da collection, se precisar mudar a porta.
