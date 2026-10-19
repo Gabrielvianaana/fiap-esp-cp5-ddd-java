@@ -83,6 +83,18 @@ App: `http://localhost:4200`
 
 ---
 
+## ✅ Testes
+
+- **Unitários do domínio** (JUnit puro, sem Spring): `mvn verify` em cada projeto.
+- **Smoke test ponta a ponta** ([`scripts/e2e-smoke-test.sh`](./scripts/e2e-smoke-test.sh)): com Core, Plataforma e Mesa no ar, roda `./scripts/e2e-smoke-test.sh` (requer `curl` e `jq`). São 61 verificações:
+  - todos os endpoints RESTful e os status de erro (400/404/409);
+  - as 7 rotas legadas que o app Mobile usa;
+  - CORS para o Angular;
+  - o fluxo da Mesa de Operações: dashboard, análise e aprovação.
+- **CI**: os workflows [`build.yml`](./.github/workflows/build.yml) e [`e2e.yml`](./.github/workflows/e2e.yml) rodam a cada push. O `e2e.yml` sobe os três serviços Java e executa o smoke test.
+
+---
+
 ## 🧪 Dados pré-carregados
 
 - **Ana Silva** · CPF `12345678900` · Renda R$ 7.500,00 · Conta 0001 / 12345-6 · Saldo R$ 12.500,00
