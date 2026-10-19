@@ -97,15 +97,15 @@ O Core Bancário já nasceu RESTful: `/api/v1/clientes` e `/api/v1/contas`, com 
 6. **Controller Adaptador para o legado**: o `CreditoOperacoesLegadoAdapterController` mantém **as mesmas rotas, verbos, nomes de campos, payloads e status** do contrato histórico (`POST /api/credito/*`, inclusive o `200` do `solicitarCredito`). Ele não tem regra de negócio: só traduz o contrato antigo e **delega para os mesmos casos de uso da API nova**, então legado e RESTful nunca divergem. Toda resposta sinaliza a descontinuação com os cabeçalhos `Deprecation: true` e `Link: <rota-nova>; rel="successor-version"`.
 
 7. **Migração gradual dos clientes**:
-   - O **Mobile (Angular)** não teve nenhuma linha alterada e continua funcionando pelo adapter, o que comprova a retrocompatibilidade.
-   - A **Mesa (Thymeleaf)** teve só a interface Feign migrada para `GET /api/v1/solicitacoes`, `GET /api/v1/solicitacoes/{id}` e `PUT /api/v1/solicitacoes/{id}/decisao`. Telas e formulários não mudaram.
-   - Quando todos os consumidores migrarem, o adapter pode ser removido sem impacto no núcleo.
+    - O **Mobile (Angular)** não teve nenhuma linha alterada e continua funcionando pelo adapter, o que comprova a retrocompatibilidade.
+    - A **Mesa (Thymeleaf)** teve só a interface Feign migrada para `GET /api/v1/solicitacoes`, `GET /api/v1/solicitacoes/{id}` e `PUT /api/v1/solicitacoes/{id}/decisao`. Telas e formulários não mudaram.
+    - Quando todos os consumidores migrarem, o adapter pode ser removido sem impacto no núcleo.
 
 8. **Governança automatizada das fronteiras**: a estrutura multi-módulo segue `presentation → application → infrastructure → domain`, e o `maven-enforcer-plugin` falha o build se:
-   - o `domain` tiver qualquer dependência de compile/runtime;
-   - a `infrastructure` depender de `application`/`presentation`;
-   - a `presentation` receber `domain`/`infrastructure` no classpath de compilação. Eles são redeclarados com escopo `runtime`, então um `import` direto nem compila, mas o Spring ainda os encontra em execução.
+    - o `domain` tiver qualquer dependência de compile/runtime;
+    - a `infrastructure` depender de `application`/`presentation`;
+    - a `presentation` receber `domain`/`infrastructure` no classpath de compilação. Eles são redeclarados com escopo `runtime`, então um `import` direto nem compila, mas o Spring ainda os encontra em execução.
 
-   Um workflow do GitHub Actions executa `mvn verify` a cada push.
+    Um workflow do GitHub Actions executa `mvn verify` a cada push.
 
 Com isso, a alta disponibilidade é preservada: os contratos em produção continuam respondendo enquanto o núcleo é reescrito com DDD e a nova API RESTful passa a coexistir com eles.
