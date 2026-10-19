@@ -1,149 +1,119 @@
 # FIAP Bank - Plataforma de Crédito 💳
 
-Microsserviço de **Esteira e Motor de Decisão de Crédito** do FIAP Bank. Responsável por processar propostas de crédito, avaliar regras de negócio e risco, comunicar-se com o Core Bancário via **Spring Cloud OpenFeign**, simular verificações no SCR (Banco Central) e Bureau de Crédito (Serasa/SPC), e notificar clientes.
+Microsserviço de **Esteira e Motor de Decisão de Crédito** do FIAP Bank. Recebe propostas, consulta SCR (Banco Central), Bureau de Crédito, CRM e Core Bancário, aplica o motor de regras, notifica o cliente e encaminha casos discricionários para a Mesa de Operações.
 
-A API foi projetada de forma que todas as operações utilizeßm o método HTTP `POST` com verbos de ação semânticos no path.
-
----
-
-## 🛠️ Tecnologias Utilizadas
-
-- **Java 21**
-- **Spring Boot 4.1**
-- **Spring Cloud OpenFeign 2024.0.0** (comunicação declarativa com o Core Bancário)
-- **Spring Data JPA**
-- **Spring Boot Actuator**
-- **H2 Database** (em memória)
-- **Maven**
+Refatorado de um projeto monolítico "tudo POST" para **DDD em Maven multi-módulo**, com **API RESTful `/api/v1`** e um **Controller Adaptador** que mantém o contrato legado `/api/credito/*` funcionando para os front-ends em produção.
 
 ---
 
-## 📋 Pré-requisitos
+## 🛠️ Tecnologias
 
-- **Java JDK 21** instalado e configurado no `PATH`.
-- **Apache Maven 3.9+** instalado.
-- *(Opcional)* Serviço **Core Bancário** rodando na porta `8080` (caso indisponível, o cliente Feign utiliza dados de fallback automaticamente).
+- Java 21 · Spring Boot 4.1 · Maven multi-módulo
+- Spring Data JPA + H2 (em memória)
+- Spring Cloud OpenFeign **2025.1.x (Oakwood)**
+- Jakarta Bean Validation · Lombok · Actuator
+- `maven-enforcer-plugin` para blindar as fronteiras entre camadas
 
 ---
 
-## 🚀 Como Executar a Aplicação
+## 🧱 Arquitetura
 
-### 1. Compilar o projeto
+```
+fiap-bank-plataforma-credito/                    (pom agregador, packaging pom)
+├── fiap-bank-plataforma-credito-domain          Java puro: SolicitacaoCredito, MotorRegrasCredito,
+│                                                VOs (Cpf, AnaliseRisco...), portas (repository/gateway)
+├── fiap-bank-plataforma-credito-infrastructure  Entidade JPA, Spring Data, adapters de repositório,
+│                                                clients Core Bancário (Feign), SCR, Bureau, CRM, Notificações
+├── fiap-bank-plataforma-credito-application     DTOs (records + Bean Validation) e casos de uso
+└── fiap-bank-plataforma-credito-presentation    Controllers RESTful, Controller Adaptador legado,
+                                                 GlobalExceptionHandler, @SpringBootApplication
+```
 
-Na raiz do diretório `fiap-bank-plataforma-credito`:
+Hierarquia de dependências: `presentation → application → infrastructure → domain`.
+
+| Módulo | Enxerga | Garantia automatizada (enforcer) |
+| :--- | :--- | :--- |
+| `domain` | nada | nenhuma dependência de compile/runtime (sem Spring, JPA, Feign) |
+| `infrastructure` | `domain` | não pode depender de `application`/`presentation` |
+| `application` | `infrastructure`, `domain` | não pode depender de `presentation` |
+| `presentation` | `application` | `domain`/`infrastructure` só em escopo `runtime`: fora do classpath de compilação |
+
+---
+
+## 🚀 Como executar
 
 ```bash
-mvn clean compile
+cd fiap-bank-plataforma-credito
+mvn clean install
+mvn -pl fiap-bank-plataforma-credito-presentation spring-boot:run
 ```
 
-### 2. Iniciar a aplicação via Maven
+Disponível em **`http://localhost:8081`**. Suba o Core Bancário (8080) antes, para que a análise use os dados reais da conta.
 
-```bash
-mvn spring-boot:run
-```
+| Propriedade | Variável | Padrão |
+| :--- | :--- | :--- |
+| `server.port` | `SERVER_PORT` | `8081` |
+| `core.bancario.url` | `CORE_BANCARIO_URL` | `http://localhost:8080/api/v1` |
 
-### 3. Executar via arquivo JAR
-
-Para gerar o pacote e executar:
-
-```bash
-mvn clean package -DskipTests
-java -jar target/fiap-bank-plataforma-credito-1.0.0-SNAPSHOT.jar
-```
-
-A aplicação estará acessível em: **`http://localhost:8081`**
+H2 Console: `http://localhost:8081/h2-console` · JDBC URL `jdbc:h2:mem:plataformacreditodb` · user `sa`.
 
 ---
 
-## ⚙️ Variáveis de Ambiente e Configuração
+## 🌐 API RESTful (`/api/v1`)
 
-As seguintes propriedades podem ser customizadas no arquivo `src/main/resources/application.yml` ou passadas como variáveis de ambiente:
+| Verbo | URI | Sucesso | Erros | Descrição |
+| :--- | :--- | :---: | :---: | :--- |
+| `POST` | `/api/v1/solicitacoes` | `201` + `Location` | 400 | Cria uma proposta e executa o motor de regras |
+| `GET` | `/api/v1/solicitacoes` | `200` | — | Lista todas as propostas (mais recentes primeiro) |
+| `GET` | `/api/v1/solicitacoes?cpf={cpf}` | `200` | 400 | Filtra as propostas de um cliente |
+| `GET` | `/api/v1/solicitacoes/{id}` | `200` | 400, 404 | Detalha uma proposta |
+| `PUT` | `/api/v1/solicitacoes/{id}/decisao` | `200` | 400, 404, 409 | Decisão da Mesa (`APROVADO`/`REPROVADO`) |
+| `DELETE` | `/api/v1/solicitacoes/{id}` | `204` | 404, 409 | Cancelamento lógico de proposta pendente (idempotente) |
+| `GET` | `/api/v1/clientes/{cpf}/conta` | `200` | 400, 404, 503 | Conta do cliente no Core Bancário |
 
-| Propriedade | Variável de Ambiente | Valor Padrão | Descrição |
-| :--- | :--- | :--- | :--- |
-| `server.port` | `SERVER_PORT` | `8081` | Porta HTTP da aplicação |
-| `core.bancario.url` | `CORE_BANCARIO_URL` | `http://localhost:8080/api/v1` | URL base da API do Core Bancário |
+Exemplo de decisão:
+
+```json
+PUT /api/v1/solicitacoes/4/decisao
+{ "decisao": "APROVADO", "parecer": "Renda comprovada por holerite." }
+```
+
+Erros seguem o padrão **Problem Details (RFC 9457)**, com a lista `erros` campo a campo nas falhas de validação.
 
 ---
 
-## 🗄️ Console do Banco de Dados H2
+## ♻️ Controller Adaptador (contrato legado, *deprecated*)
 
-- **URL:** `http://localhost:8081/h2-console`
-- **JDBC URL:** `jdbc:h2:mem:plataformacreditodb`
-- **User Name:** `sa`
-- **Password:** *(deixe em branco)*
+Mantido para o app Mobile (Angular) e qualquer consumidor antigo. Mesmas rotas, verbos, payloads e status do contrato histórico, delegando para os mesmos casos de uso da API nova. Toda resposta traz `Deprecation: true` e `Link: <rota-nova>; rel="successor-version"`.
+
+| Rota legada (POST) | Equivalente RESTful |
+| :--- | :--- |
+| `/api/credito/solicitarCredito` | `POST /api/v1/solicitacoes` |
+| `/api/credito/consultarStatusCredito` | `GET /api/v1/solicitacoes?cpf={cpf}` |
+| `/api/credito/listarTodasSolicitacoes` | `GET /api/v1/solicitacoes` |
+| `/api/credito/buscarSolicitacaoPorId` | `GET /api/v1/solicitacoes/{id}` |
+| `/api/credito/aprovarSolicitacao` | `PUT /api/v1/solicitacoes/{id}/decisao` |
+| `/api/credito/reprovarSolicitacao` | `PUT /api/v1/solicitacoes/{id}/decisao` |
+| `/api/credito/consultarClienteCore` | `GET /api/v1/clientes/{cpf}/conta` |
+
+Os payloads legados aceitam `solicitacaoId` e também `id` (nome que o README antigo documentava).
 
 ---
 
-## 🌐 Endpoints Non-RESTful (All POST)
+## ⚙️ Motor de regras
 
-Base URL: `http://localhost:8081/api/credito`
+1. Restrição no SCR → **REPROVADO**
+2. Score do Bureau < 500 → **REPROVADO**
+3. Pendência interna no CRM → **EM_ANALISE** (Mesa)
+4. Parcela estimada > 30% da renda → **EM_ANALISE** (Mesa)
+5. Core Bancário indisponível ou cliente sem conta ativa → **EM_ANALISE** (Mesa)
+6. Caso contrário → **APROVADO**
 
-### 1. Solicitar Crédito (Ação: `solicitarCredito`)
-Envia uma nova proposta para o motor de risco de crédito.
-- **Endpoint:** `POST /api/credito/solicitarCredito`
-- **Exemplo de Body:**
-```json
-{
-  "cpfCliente": "12345678900",
-  "nomeCliente": "Ana Silva",
-  "tipoCredito": "EMPRESTIMO_PESSOAL",
-  "valorSolicitado": 15000.00,
-  "quantidadeParcelas": 24,
-  "rendaMensal": 7500.00
-}
-```
+## 🧪 Propostas pré-carregadas
 
-### 2. Consultar Status por CPF (Ação: `consultarStatusCredito`)
-Consulta todas as solicitações de um cliente informado pelo corpo da requisição.
-- **Endpoint:** `POST /api/credito/consultarStatusCredito`
-- **Exemplo de Body:**
-```json
-{
-  "cpfCliente": "12345678900"
-}
-```
-
-### 3. Listar Todas as Solicitações (Ação: `listarTodasSolicitacoes`)
-Retorna todas as propostas para acompanhamento pela Mesa de Operações.
-- **Endpoint:** `POST /api/credito/listarTodasSolicitacoes`
-- **Body:** `{}` *(ou vazio)*
-
-### 4. Buscar Solicitação por ID (Ação: `buscarSolicitacaoPorId`)
-- **Endpoint:** `POST /api/credito/buscarSolicitacaoPorId`
-- **Exemplo de Body:**
-```json
-{
-  "id": 1
-}
-```
-
-### 5. Aprovar Solicitação (Ação: `aprovarSolicitacao`)
-- **Endpoint:** `POST /api/credito/aprovarSolicitacao`
-- **Exemplo de Body:**
-```json
-{
-  "id": 1,
-  "parecerOperador": "Proposta aprovada conforme política de crédito."
-}
-```
-
-### 6. Reprovar Solicitação (Ação: `reprovarSolicitacao`)
-- **Endpoint:** `POST /api/credito/reprovarSolicitacao`
-- **Exemplo de Body:**
-```json
-{
-  "id": 1,
-  "parecerOperador": "Margem consignável insuficiente."
-}
-```
-
-### 7. Consultar Cliente no Core Bancário (Ação: `consultarClienteCore`)
-Executa a chamada direta ao Core Bancário via Spring Cloud OpenFeign.
-- **Endpoint:** `POST /api/credito/consultarClienteCore`
-- **Exemplo de Body:**
-```json
-{
-  "cpfCliente": "12345678900"
-}
-```
+| Cliente | Proposta | Resultado esperado (com o Core no ar) |
+| :--- | :--- | :--- |
+| Ana Silva `12345678900` | R$ 15.000 em 24x | APROVADO |
+| Carlos Eduardo Oliveira `98765432100` | R$ 350.000 em 180x | APROVADO |
+| Mariana Souza `55544433399` | R$ 45.000 em 48x | REPROVADO (SCR) |
+| Ana Silva `12345678900` | R$ 60.000 em 12x | EM_ANALISE (vai para a Mesa) |

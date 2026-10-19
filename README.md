@@ -1,76 +1,92 @@
 # FIAP Bank - Esteira de Crédito 🏦💳
 
-Monorepo contendo o ecossistema completo da **Esteira de Crédito** do FIAP Bank, composto por quatro aplicações integradas: Core Bancário, Plataforma de Crédito, Mesa de Operações e Internet Banking Mobile.
+**Checkpoint 5 · Domain Driven Design - Java · Turma 2ESPG · Prof. Eduardo dos Santos Ramos**
+
+Monorepo com o ecossistema da **Esteira de Crédito** do FIAP Bank: Core Bancário, Plataforma de Crédito, Mesa de Operações e Internet Banking Mobile.
+
+## 👥 Integrantes
+
+| Nome | RM |
+| :--- | :--- |
+| Gabriel Viana de Souza | RM 564382 |
+| Rafael Falaguasta Ferraz | RM 561714 |
 
 ---
 
-## 📁 Estrutura do Workspace e Documentação
+## 📁 Estrutura do Workspace
 
-Cada projeto possui seu próprio arquivo `README.md` detalhando tecnologias, arquitetura, rotas e instruções de execução:
-
-| Projeto | Tecnologia | Porta | Descrição & Documentação |
+| Projeto | Tecnologia | Porta | Situação no CP5 |
 | :--- | :--- | :---: | :--- |
-| **`fiap-bank-core-bancario`** | Java 21, Spring Boot, JPA, DDD Multi-Módulo | `8080` | [README do Core Bancário](./fiap-bank-core-bancario/README.md) |
-| **`fiap-bank-plataforma-credito`** | Java 21, Spring Boot, Spring Cloud Feign | `8081` | [README da Plataforma de Crédito](./fiap-bank-plataforma-credito/README.md) |
-| **`fiap-bank-mesa-operacoes-credito`** | Java 21, Spring Boot, Thymeleaf, Feign | `8082` | [README da Mesa de Operações](./fiap-bank-mesa-operacoes-credito/README.md) |
-| **`fiap-bank-internet-banking-mobile`** | Angular 17+, TypeScript, CSS Responsivo | `4200` | [README do Mobile Angular](./fiap-bank-internet-banking-mobile/README.md) |
+| [`fiap-bank-core-bancario`](./fiap-bank-core-bancario/README.md) | Java 21, Spring Boot 4.1, JPA, DDD multi-módulo | `8080` | **Construído do zero** (Fase 1) |
+| [`fiap-bank-plataforma-credito`](./fiap-bank-plataforma-credito/README.md) | Java 21, Spring Boot 4.1, OpenFeign, DDD multi-módulo | `8081` | **Refatorado** para DDD + RESTful + Adapter legado (Fase 2) |
+| [`fiap-bank-mesa-operacoes-credito`](./fiap-bank-mesa-operacoes-credito/README.md) | Java 21, Spring Boot 4.1, Thymeleaf, OpenFeign | `8082` | Ajustado: Spring Cloud corrigido e client migrado para a API RESTful |
+| [`fiap-bank-internet-banking-mobile`](./fiap-bank-internet-banking-mobile/README.md) | Angular 17+ | `4200` | **Sem alteração**: continua usando o contrato legado via Controller Adaptador |
+
+Documentos da entrega:
+
+- [`docs/avaliacao-teorica.md`](./docs/avaliacao-teorica.md): respostas da Avaliação Teórica (Seção 5) e diagnóstico das falhas do estado inicial.
 
 ---
 
-## 🚦 Ordem Recomendada de Execução
+## 🧱 Arquitetura alvo (Core Bancário e Plataforma de Crédito)
 
-Para testar o fluxo de ponta a ponta com todas as integrações ativas, inicie os serviços na seguinte ordem:
+```
+<projeto>/                         pom agregador (packaging pom)
+├── <projeto>-domain               Java puro: entidades, value objects, domain services, portas
+├── <projeto>-infrastructure       JPA (@Entity), Spring Data, Repository Adapters, clients externos
+├── <projeto>-application          DTOs (records + Bean Validation) e casos de uso
+└── <projeto>-presentation         Controllers RESTful, @RestControllerAdvice, @SpringBootApplication
+```
 
-### 1. Iniciar o Core Bancário (`Porta 8080`)
-Responsável pela gestão de clientes e contas bancárias.
+Dependências permitidas: `presentation → application → infrastructure → domain`. O `maven-enforcer-plugin` falha o build em qualquer violação:
+
+- o `domain` não aceita nenhuma dependência de compile/runtime;
+- a `presentation` só recebe `domain`/`infrastructure` em escopo `runtime`, então um `import` direto não compila.
+
+O workflow [`.github/workflows/build.yml`](./.github/workflows/build.yml) roda `mvn verify` (compilação, testes e enforcer) em todo push.
+
+---
+
+## 🚦 Ordem recomendada de execução
+
+### 1. Core Bancário (`8080`)
 ```bash
 cd fiap-bank-core-bancario
 mvn clean install
 mvn -pl fiap-bank-core-bancario-presentation spring-boot:run
 ```
-- API Base: `http://localhost:8080/api/v1`
-- H2 Console: `http://localhost:8080/h2-console`
+API: `http://localhost:8080/api/v1` · H2: `http://localhost:8080/h2-console`
 
----
-
-### 2. Iniciar a Plataforma de Crédito (`Porta 8081`)
-Motor de decisão e esteira, integrado via Spring Cloud OpenFeign ao Core Bancário.
+### 2. Plataforma de Crédito (`8081`)
 ```bash
 cd fiap-bank-plataforma-credito
-mvn clean compile
-mvn spring-boot:run
+mvn clean install
+mvn -pl fiap-bank-plataforma-credito-presentation spring-boot:run
 ```
-- API Base: `http://localhost:8081/api/credito`
-- H2 Console: `http://localhost:8081/h2-console`
+API RESTful: `http://localhost:8081/api/v1` · Contrato legado: `http://localhost:8081/api/credito` · H2: `http://localhost:8081/h2-console`
 
----
-
-### 3. Iniciar a Mesa de Operações (`Porta 8082`)
-Front-end Web Thymeleaf para analistas de risco aprovarem ou reprovarem propostas.
+### 3. Mesa de Operações (`8082`)
 ```bash
 cd fiap-bank-mesa-operacoes-credito
 mvn clean compile
 mvn spring-boot:run
 ```
-- Painel Web do Operador: `http://localhost:8082`
+Painel do operador: `http://localhost:8082`
 
----
-
-### 4. Iniciar o Internet Banking Mobile (`Porta 4200`)
-Front-end Angular responsivo voltado ao cliente final para simulação e submissão de crédito.
+### 4. Internet Banking Mobile (`4200`)
 ```bash
 cd fiap-bank-internet-banking-mobile
 npm install
 npm run start
 ```
-- App Mobile Web: `http://localhost:4200`
+App: `http://localhost:4200`
 
 ---
 
-## 🧪 Dados Pré-Carregados para Testes
+## 🧪 Dados pré-carregados
 
-Os serviços iniciam automaticamente com dados pré-populados para testes:
+- **Ana Silva** · CPF `12345678900` · Renda R$ 7.500,00 · Conta 0001 / 12345-6 · Saldo R$ 12.500,00
+- **Carlos Eduardo Oliveira** · CPF `98765432100` · Renda R$ 12.000,00 · Conta 0001 / 78901-2 · Saldo R$ 45.800,50
+- **Mariana Souza** · CPF `55544433399` · restrição ativa no SCR (sem conta no Core)
 
-- **Cliente 1 (Aprovável):** CPF `12345678900` | Nome: Ana Silva | Renda: R$ 7.500,00 | Saldo: R$ 12.500,00
-- **Cliente 2 (Aprovável):** CPF `98765432100` | Nome: Carlos Eduardo Oliveira | Renda: R$ 12.000,00 | Saldo: R$ 45.800,50
-- **Cliente 3 (Reprovado SCR):** CPF `55544433399` | Nome: Mariana Souza | Restrição ativa no SCR
+A Plataforma sobe com 4 propostas: duas aprovadas automaticamente, uma reprovada pelo SCR e uma **em análise**, para a Mesa decidir.

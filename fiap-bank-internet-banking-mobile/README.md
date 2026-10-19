@@ -60,6 +60,9 @@ A URL da API da **Plataforma de Crédito** é configurada em:
      "plataformaCreditoUrl": "http://localhost:8081/api/credito"
    }
    ```
+
+   > **CP5:** o app continua funcionando sem nenhuma alteração. As rotas `/api/credito/*` agora são atendidas pelo *Controller Adaptador* da Plataforma de Crédito, que delega para os mesmos casos de uso da nova API RESTful `/api/v1`.
+
 2. **Tempo de Compilação (Build):** `src/environments/environment.ts` (desenvolvimento) e `src/environments/environment.prod.ts` (produção).
 
 ---

@@ -4,13 +4,15 @@ Front-end Web de **Mesa de Operações de Crédito** do FIAP Bank. Permite que o
 
 A comunicação com a **Plataforma de Crédito** é realizada de forma declarativa utilizando o **Spring Cloud OpenFeign** (`@FeignClient`).
 
+> **CP5:** o client foi migrado das rotas de ação legadas (`POST /api/credito/*`) para a API RESTful da Plataforma: `GET /api/v1/solicitacoes`, `GET /api/v1/solicitacoes/{id}` e `PUT /api/v1/solicitacoes/{id}/decisao`. As telas e os formulários Thymeleaf não mudaram.
+
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
 - **Java 21**
 - **Spring Boot 4.1**
-- **Spring Cloud OpenFeign 2024.0.0**
+- **Spring Cloud OpenFeign 2025.1.x** (release train compatível com Spring Boot 4.1; o 2024.0.0 original só suporta Boot 3.4)
 - **Thymeleaf** (renderização server-side de templates HTML)
 - **Spring Web**
 - **Maven**
