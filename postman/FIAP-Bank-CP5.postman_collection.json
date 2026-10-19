@@ -1,0 +1,1053 @@
+{
+  "info": {
+    "name": "FIAP Bank - CP5 (Core Bancário + Plataforma de Crédito)",
+    "description": "Requisicoes do Checkpoint 5. Suba o Core (8080) e a Plataforma (8081) e rode a collection inteira pelo Runner, na ordem.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "core_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "plataforma_url",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "clienteId",
+      "value": ""
+    },
+    {
+      "key": "numeroConta",
+      "value": ""
+    },
+    {
+      "key": "solicitacaoId",
+      "value": ""
+    },
+    {
+      "key": "cancelarId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Core Bancário - Clientes",
+      "item": [
+        {
+          "name": "Listar clientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{core_url}}/api/v1/clientes",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{core_url}}/api/v1/clientes",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"111.444.777-35\",\n  \"nome\": \"Joao Pereira\",\n  \"email\": \"joao.pereira@email.com\",\n  \"dataNascimento\": \"1995-03-20\",\n  \"rendaMensal\": 5200.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"clienteId\", pm.response.json().id);",
+                  "pm.test(\"Header Location presente\", function () { pm.response.to.have.header(\"Location\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar cliente com CPF duplicado (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{core_url}}/api/v1/clientes",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"11144477735\",\n  \"nome\": \"Joao Pereira\",\n  \"email\": \"joao@email.com\",\n  \"dataNascimento\": \"1995-03-20\",\n  \"rendaMensal\": 5200.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar cliente inválido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{core_url}}/api/v1/clientes",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"123\",\n  \"nome\": \"Jo\",\n  \"email\": \"email-invalido\",\n  \"dataNascimento\": \"2999-01-01\",\n  \"rendaMensal\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"Lista os erros por campo\", function () { pm.expect(pm.response.json().erros.length).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar cliente por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{core_url}}/api/v1/clientes/{{clienteId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar cliente por CPF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{core_url}}/api/v1/clientes/cpf/123.456.789-00",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar cliente inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{core_url}}/api/v1/clientes/cpf/00000000000",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atualizar cliente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{core_url}}/api/v1/clientes/{{clienteId}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Joao Pereira Lima\",\n  \"email\": \"joao.lima@email.com\",\n  \"dataNascimento\": \"1995-03-20\",\n  \"rendaMensal\": 6100.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Core Bancário - Contas",
+      "item": [
+        {
+          "name": "Listar contas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{core_url}}/api/v1/contas",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir conta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{core_url}}/api/v1/contas",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpfCliente\": \"11144477735\",\n  \"tipoConta\": \"CORRENTE\",\n  \"saldoInicial\": 100.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"numeroConta\", pm.response.json().numeroConta);",
+                  "pm.test(\"Agencia padrao 0001\", function () { pm.expect(pm.response.json().agencia).to.eql(\"0001\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Abrir conta com tipo inválido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{core_url}}/api/v1/contas",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpfCliente\": \"11144477735\",\n  \"tipoConta\": \"INVESTIMENTO\",\n  \"saldoInicial\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar conta por número",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{core_url}}/api/v1/contas/{{numeroConta}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar conta por CPF do titular",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{core_url}}/api/v1/contas/cliente/11144477735",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Depósito",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{core_url}}/api/v1/contas/{{numeroConta}}/saldo",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operacao\": \"DEPOSITO\",\n  \"valor\": 50.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Saldo 150\", function () { pm.expect(pm.response.json().saldo).to.eql(150); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Saque",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{core_url}}/api/v1/contas/{{numeroConta}}/saldo",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operacao\": \"SAQUE\",\n  \"valor\": 30.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Saque com saldo insuficiente (409)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{core_url}}/api/v1/contas/{{numeroConta}}/saldo",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operacao\": \"SAQUE\",\n  \"valor\": 99999.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remover cliente com conta ativa (409)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{core_url}}/api/v1/clientes/{{clienteId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Encerrar conta",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{core_url}}/api/v1/contas/{{numeroConta}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remover cliente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{core_url}}/api/v1/clientes/{{clienteId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Plataforma de Crédito - API RESTful",
+      "item": [
+        {
+          "name": "Listar solicitações",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar solicitações por CPF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes?cpf=12345678900",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar solicitação (aprovação automática)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpfCliente\": \"12345678900\",\n  \"nomeCliente\": \"Ana Silva\",\n  \"tipoCredito\": \"EMPRESTIMO_PESSOAL\",\n  \"valorSolicitado\": 15000.0,\n  \"quantidadeParcelas\": 24,\n  \"rendaMensal\": 7500.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Aprovada pelo motor\", function () { pm.expect(pm.response.json().status).to.eql(\"APROVADO\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar solicitação (vai para a Mesa)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpfCliente\": \"12345678900\",\n  \"nomeCliente\": \"Ana Silva\",\n  \"tipoCredito\": \"CREDITO_AUTOMOTIVO\",\n  \"valorSolicitado\": 60000.0,\n  \"quantidadeParcelas\": 12,\n  \"rendaMensal\": 7500.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"solicitacaoId\", pm.response.json().id);",
+                  "pm.test(\"Em analise\", function () { pm.expect(pm.response.json().status).to.eql(\"EM_ANALISE\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar solicitação inválida (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpfCliente\": \"12345678900\",\n  \"nomeCliente\": \"Ana Silva\",\n  \"tipoCredito\": \"PESSOAL\",\n  \"valorSolicitado\": 1000,\n  \"quantidadeParcelas\": 0,\n  \"rendaMensal\": 5000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar solicitação por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes/{{solicitacaoId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar solicitação inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes/999999",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Decisão da Mesa: aprovar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes/{{solicitacaoId}}/decisao",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decisao\": \"APROVADO\",\n  \"parecer\": \"Renda comprovada por holerite.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Decisão em proposta já decidida (409)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes/{{solicitacaoId}}/decisao",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decisao\": \"REPROVADO\",\n  \"parecer\": \"Tarde demais\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Criar solicitação para cancelar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpfCliente\": \"12345678900\",\n  \"nomeCliente\": \"Ana Silva\",\n  \"tipoCredito\": \"PESSOAL\",\n  \"valorSolicitado\": 90000.0,\n  \"quantidadeParcelas\": 10,\n  \"rendaMensal\": 7500.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set(\"cancelarId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar solicitação",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{plataforma_url}}/api/v1/solicitacoes/{{cancelarId}}",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar conta do cliente no Core",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{plataforma_url}}/api/v1/clientes/12345678900/conta",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Plataforma de Crédito - Contrato legado (Controller Adaptador)",
+      "description": "Rotas antigas mantidas para o app Mobile. Respondem com o cabecalho Deprecation.",
+      "item": [
+        {
+          "name": "solicitarCredito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{plataforma_url}}/api/credito/solicitarCredito",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpfCliente\": \"12345678900\",\n  \"nomeCliente\": \"Ana Silva\",\n  \"tipoCredito\": \"EMPRÉSTIMO PESSOAL\",\n  \"valorSolicitado\": 5000,\n  \"quantidadeParcelas\": 12,\n  \"rendaMensal\": 7500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Header Deprecation\", function () { pm.response.to.have.header(\"Deprecation\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "consultarStatusCredito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{plataforma_url}}/api/credito/consultarStatusCredito",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpfCliente\": \"12345678900\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "listarTodasSolicitacoes",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{plataforma_url}}/api/credito/listarTodasSolicitacoes",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "buscarSolicitacaoPorId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{plataforma_url}}/api/credito/buscarSolicitacaoPorId",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitacaoId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "consultarClienteCore",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{plataforma_url}}/api/credito/consultarClienteCore",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpfCliente\": \"12345678900\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
