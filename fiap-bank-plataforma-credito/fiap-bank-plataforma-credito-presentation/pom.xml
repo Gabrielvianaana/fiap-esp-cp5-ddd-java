@@ -21,7 +21,7 @@
             <artifactId>fiap-bank-plataforma-credito-application</artifactId>
         </dependency>
 
-        <!-- domain/infrastructure apenas em runtime: fora do classpath de compilacao desta camada -->
+        <!-- domain/infrastructure apenas em runtime (application os declara como optional): fora do classpath de compilacao -->
         <dependency>
             <groupId>br.com.fiap.bank</groupId>
             <artifactId>fiap-bank-plataforma-credito-infrastructure</artifactId>

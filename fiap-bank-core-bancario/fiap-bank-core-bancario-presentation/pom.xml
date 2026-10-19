@@ -22,10 +22,10 @@
         </dependency>
 
         <!--
-            Blindagem em tempo de compilacao: domain e infrastructure chegariam aqui de forma transitiva
-            (via application) no escopo compile. Redeclarando-os como runtime, eles ficam FORA do classpath
-            de compilacao da presentation: qualquer import de classe do dominio ou da infraestrutura nesta
-            camada gera erro de compilacao. Em runtime eles continuam disponiveis para o Spring (beans/JPA).
+            Blindagem em tempo de compilacao: application declara domain/infrastructure como optional,
+            entao eles nao chegam aqui de forma transitiva. A presentation os declara apenas com escopo
+            runtime: ficam FORA do classpath de compilacao (qualquer import de classe do dominio ou da
+            infraestrutura nesta camada gera erro de compilacao), mas disponiveis em runtime para o Spring.
         -->
         <dependency>
             <groupId>br.com.fiap.bank</groupId>

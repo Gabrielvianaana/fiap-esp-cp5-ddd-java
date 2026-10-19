@@ -15,13 +15,19 @@
     <description>Casos de uso da esteira de credito e DTOs (Java Records + Bean Validation).</description>
 
     <dependencies>
+        <!--
+            application enxerga infrastructure e domain.
+            optional=true: essas dependencias NAO sao repassadas de forma transitiva para a presentation.
+        -->
         <dependency>
             <groupId>br.com.fiap.bank</groupId>
             <artifactId>fiap-bank-plataforma-credito-infrastructure</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>br.com.fiap.bank</groupId>
             <artifactId>fiap-bank-plataforma-credito-domain</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <dependency>

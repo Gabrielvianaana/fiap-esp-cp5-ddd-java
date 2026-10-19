@@ -15,14 +15,20 @@
     <description>Casos de uso, servicos de aplicacao e DTOs (Java Records + Bean Validation).</description>
 
     <dependencies>
-        <!-- application enxerga infrastructure e domain -->
+        <!--
+            application enxerga infrastructure e domain.
+            optional=true: essas dependencias NAO sao repassadas de forma transitiva para quem depende
+            de application (a presentation), que assim nao as recebe no classpath de compilacao.
+        -->
         <dependency>
             <groupId>br.com.fiap.bank</groupId>
             <artifactId>fiap-bank-core-bancario-infrastructure</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>br.com.fiap.bank</groupId>
             <artifactId>fiap-bank-core-bancario-domain</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
